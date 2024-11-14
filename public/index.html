@@ -1,72 +1,138 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const bodyParser = require('body-parser');
-require('dotenv').config();
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRUD Series</title>
+    <link rel="stylesheet" href="/styles.css">
 
-const app = express();
-const PORT = 3000
-app.use(bodyParser.json());
-app.use(express.static('public'));
+</head>
+<body>
+    <h1>CRUD de Series</h1>
 
-DB = process.env.DB
+    <!-- Formulario para crear una nueva serie -->
+    <h2>Crear Nueva Serie</h2>
+    <form id="createForm">
+        <input type="text" id="title" placeholder="Título" required>
+        <input type="text" id="genre" placeholder="Género" required>
+        <input type="number" id="releaseYear" placeholder="Año de Lanzamiento" required>
+        <button type="submit">Crear Serie</button>
+    </form>
 
-// mongoose.connect(DB, { useNewUrlParser: true,
-//     useUnifiedTopology: true})
-//     .then(() => {
-//     })
-//     .catch((error) => {
-//     console.error('Error de conexión a la base de datos', error);
-//     });
+    <!-- Tabla para mostrar las series -->
+    <h2>Lista de Series</h2>
+    <table id="seriesTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Título</th>
+                <th>Género</th>
+                <th>Año de Lanzamiento</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
 
-mongoose.connect(DB, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-});
+    <!-- Formulario para actualizar una serie -->
+    <h2>Actualizar Serie</h2>
+        <input type="hidden" id="updateId">
+        <input type="text" id="updateTitle" placeholder="Nuevo Título" required>
+        <input type="text" id="updateGenre" placeholder="Nuevo Género" required>
+        <input type="number" id="updateYear" placeholder="Nuevo Año de Lanzamiento" required>
+        <button type="submit">Actualizar Serie</button>
+    </form>
 
-const serieSchema = new mongoose.Schema ({
-        title: String,
-        genre: String,
-        releaseYear: Number,
-        });
-const Serie = mongoose.model('Serie', serieSchema);
+    <script>
+        // Función para obtener todas las series y mostrarlas en la tabla
+        async function fetchSeries() {
+            const response = await fetch('/series');
+            const series = await response.json();
+            const tbody = document.querySelector('#seriesTable tbody');
+            tbody.innerHTML = '';  // Limpiar la tabla antes de llenar
 
-app.post('/series' , async (req, res) => {
-        try {
-        const newSerie = await Serie.create(req.body);
-        res.json(newSerie)
-        } catch (error) {
-        res.status(500).json({ error: 'Error al crear la serie.' });
+            series.forEach(serie => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${serie._id}</td>
+                    <td>${serie.title}</td>
+                    <td>${serie.genre}</td>
+                    <td>${serie.releaseYear}</td>
+                    <td>
+                        <button onclick="editSerie('${serie._id}', '${serie.title}', '${serie.genre}', ${serie.releaseYear})">Editar</button>
+                        <button onclick="deleteSerie('${serie._id}')">Eliminar</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
         }
+
+        // Crear una nueva serie
+        document.getElementById('createForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('title').value;
+            const genre = document.getElementById('genre').value;
+            const releaseYear = document.getElementById('releaseYear').value;
+
+            const response = await fetch('/series', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, genre, releaseYear })
+            });
+
+            if (response.ok) {
+                fetchSeries();
+                document.getElementById('createForm').reset();
+            } else {
+                alert('Error al crear la serie');
+            }
         });
 
-app.get('/series' , async (req, res) => {
-        try {
-        const series = await Serie.find();
-        res.json(series);
-        } catch (error) {
-        res.status(404).json({ error: 'Error al obtener las series.'});
+        // Editar serie (mostrar datos en el formulario de actualización)
+        function editSerie(id, title, genre, releaseYear) {
+            document.getElementById('updateId').value = id;
+            document.getElementById('updateTitle').value = title;
+            document.getElementById('updateGenre').value = genre;
+            document.getElementById('updateYear').value = releaseYear;
+            document.getElementById('updateForm').style.display = 'block';
         }
+
+        // Actualizar serie
+        document.getElementById('updateForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('updateId').value;
+            const title = document.getElementById('updateTitle').value;
+            const genre = document.getElementById('updateGenre').value;
+            const releaseYear = document.getElementById('updateYear').value;
+
+            const response = await fetch(`/series/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, genre, releaseYear })
+            });
+
+            if (response.ok) {
+                fetchSeries();
+                document.getElementById('updateForm').reset();
+                document.getElementById('updateForm').style.display = 'none';
+            } else {
+                alert('Error al actualizar la serie');
+            }
         });
 
-app.put('/series/:id', async (req, res) => {
-        try {
-        const updateSerie = await Serie.findByIdAndUpdate(req.params.id,
-        req.body, { new: true });
-        res.json(updateSerie);
-        } catch (error) {
-        res.status(500).json({ error: 'Error al actualizar la serie.' });
+        // Eliminar serie
+        async function deleteSerie(id) {
+            const response = await fetch(`/series/${id}`, { method: 'DELETE' });
+
+            if (response.ok) {
+                fetchSeries();
+            } else {
+                alert('Error al eliminar la serie');
+            }
         }
-        });
 
-app.delete('/series/:id', async (req, res) => {
-        try {
-        const deletedSerie = await Serie.findByIdAndDelete(req.params.id);
-        res.json(deletedSerie);
-        } catch (error) {
-        res.status(500).json({ error: 'Error al eliminar la serie.'});
-        }
-        });
-
-app.listen(PORT, () => {
-        console.log(`Servidor iniciado en http://localhost:${PORT}`)
-        });
+        // Cargar las series cuando se carga la página
+        fetchSeries();
+    </script>
+</body>
+</html>
