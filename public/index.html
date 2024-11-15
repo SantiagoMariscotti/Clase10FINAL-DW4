@@ -35,13 +35,16 @@
     </table>
 
     <!-- Formulario para actualizar una serie -->
-    <h2>Actualizar Serie</h2>
-        <input type="hidden" id="updateId">
-        <input type="text" id="updateTitle" placeholder="Nuevo Título" required>
-        <input type="text" id="updateGenre" placeholder="Nuevo Género" required>
-        <input type="number" id="updateYear" placeholder="Nuevo Año de Lanzamiento" required>
-        <button type="submit">Actualizar Serie</button>
-    </form>
+<!-- Formulario para actualizar una serie -->
+<h2>Actualizar Serie</h2>
+<form id="updateForm">
+    <input type="hidden" id="updateId">
+    <input type="text" id="updateTitle" placeholder="Nuevo Título" required>
+    <input type="text" id="updateGenre" placeholder="Nuevo Género" required>
+    <input type="number" id="updateYear" placeholder="Nuevo Año de Lanzamiento" required>
+    <button type="submit">Actualizar Serie</button>
+</form>
+
 
     <script>
         // Función para obtener todas las series y mostrarlas en la tabla
@@ -132,7 +135,10 @@
         }
 
         // Cargar las series cuando se carga la página
-        fetchSeries();
+        document.addEventListener('DOMContentLoaded', () => {
+    fetchSeries();
+});
+
     </script>
 </body>
 </html>
